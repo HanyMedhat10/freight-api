@@ -7,6 +7,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './core/exceptions Filters/all-exceptions.filter';
 
@@ -20,6 +21,17 @@ async function bootstrap() {
     type: VersioningType.URI,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  const config = new DocumentBuilder()
+    .setTitle('FREIGHT API')
+    .setDescription('FREIGHT API Documentation')
+    .addBearerAuth()
+    .setVersion('1.0')
+    .addTag('FREIGHT')
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, documentFactory, {
+    jsonDocumentUrl: 'swagger/json',
+  });
   // main.ts
   app.useGlobalFilters(new AllExceptionsFilter());
   // Global middleware

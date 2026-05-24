@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-example_db}
+    ports:
+      # Format: "Host_Port:Container_Port"
+      # Consider changing the host port (e.g., "5433:5432") if running multiple instances
+      - "5432:5432"
+    volumes:
+      # Persists database data across container restarts and rebuilds
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Ensures the database is actually ready to accept connections
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-example_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+    name: postgres_data
+
+networks:
+  app-network:
+    name: app_network
+    driver: bridge

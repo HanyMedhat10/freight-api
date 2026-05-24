@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   ArgumentsHost,
   BadRequestException,
@@ -121,7 +119,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     // Fastify uses reply.code().send() — NOT response.status().json()
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     reply.code(statusCode).send(body);
   }
 

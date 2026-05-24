@@ -1,14 +1,24 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
-import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.PGHOST,
+      port: Number(process.env.PGPORT),
+      username: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      database: process.env.PGDATABASE,
+      autoLoadEntities: true,
+      synchronize: true, // will the project production is false
+    }),
     ConfigModule.forRoot(),
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+
     ThrottlerModule.forRoot([
       {
         name: 'short',
@@ -29,12 +39,11 @@ import { ConfigModule } from '@nestjs/config';
   ],
   controllers: [AppController],
   providers: [
-    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+
     AppService,
   ],
 })

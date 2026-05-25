@@ -22,8 +22,8 @@ export class User {
   email!: string;
 
   // select: false ensures the password isn't accidentally queried and leaked
-  @Column({ select: false, nullable: true })
-  password?: string;
+  @Column({ select: false })
+  password!: string;
 
   @Column({ type: 'enum', enum: Role, default: Role.CLIENT })
   role!: Role;

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
   Injectable,
@@ -5,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import { sign } from 'jsonwebtoken';
+import * as process from 'process';
 import { Repository } from 'typeorm';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { LoginDto } from './dto/login.dto';
@@ -80,10 +84,14 @@ export class AuthService implements OnApplicationBootstrap {
     if (!isMatch) {
       throw new BadRequestException('Invalid email or password');
     }
-    return user;
-    /* delete user.password; // Remove password before returning user data
-    const token = sign({ ...user }, process.env.JWT_SECRET || 'secret');
-    return { ...user, token }; */
+    // delete user.password; // Remove password before returning user data
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+    const token = sign(
+      { ...userWithoutPassword },
+      process.env.JWT_SECRET || 'secret',
+    );
+    return { ...userWithoutPassword, token };
   }
   async findAll() {
     return await this.userRepository.find();

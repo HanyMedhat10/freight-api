@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -36,6 +37,8 @@ import { AppService } from './app.service';
         limit: 500, // 500 requests per hour for sustained usage
       },
     ]),
+
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [

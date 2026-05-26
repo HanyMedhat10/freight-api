@@ -3,7 +3,7 @@
 import {
   BadRequestException,
   Injectable,
-  type OnApplicationBootstrap,
+  OnApplicationBootstrap,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -85,7 +85,7 @@ export class AuthService implements OnApplicationBootstrap {
       throw new BadRequestException('Invalid email or password');
     }
     // delete user.password; // Remove password before returning user data
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     const token = sign(
       { ...userWithoutPassword },
@@ -115,6 +115,9 @@ export class AuthService implements OnApplicationBootstrap {
     if (!user) {
       throw new BadRequestException('User not found');
     }
+
     return await this.userRepository.softRemove(user);
+    // but i have catch filter that catch error when user not found and return 404 not found, so i can use softDelete directly without check if user exist or not because if user not exist it will throw error and catch by filter and return 404 not found
+    // return await this.userRepository.softDelete(id);
   }
 }

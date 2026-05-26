@@ -6,10 +6,12 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Role } from './enum/user.enum';
+import { Contract } from 'src/contract/entities/contract.entity';
 
 @Entity()
 export class User {
@@ -37,6 +39,8 @@ export class User {
   @JoinColumn({ name: 'createdById' })
   createdBy?: User;
 
+  @OneToMany(() => Contract, (contract) => contract.client)
+  contracts!: Contract[];
   @CreateDateColumn()
   createdAt!: Date;
 

@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { ContractModule } from './contract/contract.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -39,6 +40,8 @@ import { AuthModule } from './auth/auth.module';
     ]),
 
     AuthModule,
+
+    ContractModule,
   ],
   controllers: [AppController],
   providers: [

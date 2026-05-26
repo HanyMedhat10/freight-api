@@ -11,5 +11,6 @@
       "name": "postgres",
       "database": "freight_db"
     }
-  ]
+  ],
+  "cSpell.words": ["KHTML", "mxfile"]
 }

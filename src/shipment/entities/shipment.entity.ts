@@ -44,7 +44,6 @@ export class Shipment {
   client!: User;
   @ManyToOne(() => Contract, (contract) => contract.shipments, {
     nullable: false,
-    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'contractId' })
   contract!: Contract;

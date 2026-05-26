@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -13,6 +14,7 @@ import {
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from 'src/core/utility/decorators/current-user.decorator';
+import { PaginationDto } from 'src/core/utility/pagination.dto';
 import { AuthService } from './auth.service';
 import type { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -23,7 +25,6 @@ import { User } from './entities/user.entity';
 import { JwtAuthGuard } from './jwt.guard';
 import { RoleGuard } from './role/role.guard';
 import { Roles } from './roles/roles.decorator';
-import { PaginationDto } from 'src/core/utility/pagination.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -56,7 +57,7 @@ export class AuthController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.authService.findOne(id);
   }
 
@@ -69,14 +70,14 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateUserDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateAuthDto: UpdateUserDto) {
     return this.authService.update(id, updateAuthDto);
   }
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.authService.remove(id);
   }
   @ApiBearerAuth()

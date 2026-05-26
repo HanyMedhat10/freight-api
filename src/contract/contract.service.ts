@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { async } from 'rxjs';
 import { User } from 'src/auth/entities/user.entity';
+import type { PaginatedResult, PaginationDto } from 'src/core/utility/pagination.dto';
 import type { Repository } from 'typeorm';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { Contract } from './entities/contract.entity';
-import type { PaginationDto } from 'src/core/utility/pagination.dto';
-import type { PaginatedResult } from 'src/core/utility/pagination.dto';
 
 @Injectable()
 export class ContractService {
@@ -55,6 +55,12 @@ export class ContractService {
   async findOne(id: string) {
     return await this.contractRepository.findOne({
       where: { id },
+      relations: { client: true },
+    });
+  }
+  async findClientContracts(user: User) {
+    return  await this.contractRepository.findAndCount({
+      where: { client: { id: user.id } },
       relations: { client: true },
     });
   }

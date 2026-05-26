@@ -84,7 +84,6 @@ export class AuthService implements OnApplicationBootstrap {
     if (!isMatch) {
       throw new BadRequestException('Invalid email or password');
     }
-    // delete user.password; // Remove password before returning user data
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     const token = sign(

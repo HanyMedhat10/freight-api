@@ -17,11 +17,11 @@ import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { RoleGuard } from 'src/auth/role/role.guard';
 import { Roles } from 'src/auth/roles/roles.decorator';
 import { CurrentUser } from 'src/core/utility/decorators/current-user.decorator';
+import { PaginationDto } from 'src/core/utility/pagination.dto';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import type { UpdateStatusWithTrackingDto } from './dto/update-status-with-tracking.dto';
 import { ShipmentService } from './shipment.service';
-import { PaginationDto } from 'src/core/utility/pagination.dto';
 
 @Controller('shipment')
 export class ShipmentController {
@@ -47,7 +47,7 @@ export class ShipmentController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.shipmentService.findOne(id);
   }
   @ApiBearerAuth()
@@ -74,7 +74,7 @@ export class ShipmentController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateShipmentDto: UpdateShipmentDto,
   ) {
     return this.shipmentService.update(id, updateShipmentDto);
@@ -84,7 +84,7 @@ export class ShipmentController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Patch(':id/status')
   updateStatusWithTrackingLog(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateStatusWithTrackingDto: UpdateStatusWithTrackingDto,
   ) {
     return this.shipmentService.updateStatusWithTrackingLog(
@@ -96,7 +96,7 @@ export class ShipmentController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.shipmentService.remove(id);
   }
 }

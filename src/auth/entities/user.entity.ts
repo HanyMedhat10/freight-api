@@ -4,8 +4,10 @@ import {
   DeleteDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn, // Moved here
+  UpdateDateColumn,
 } from 'typeorm';
 import { Role } from './enum/user.enum';
 
@@ -27,6 +29,13 @@ export class User {
 
   @Column({ type: 'enum', enum: Role, default: Role.CLIENT })
   role!: Role;
+
+  @ManyToOne(() => User, (user) => user.id, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'createdById' })
+  createdBy?: User;
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import * as process from 'process';
 import { Repository } from 'typeorm';
+import type { ChangePasswordDto } from './dto/change-password.dto';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { LoginDto } from './dto/login.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -48,15 +49,15 @@ export class AuthService implements OnApplicationBootstrap {
       console.log(`Admin user already exists with email: ${adminEmail}`);
     }
   }
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto, currentUser: User) {
     const email = createUserDto.email.toLowerCase();
-    const user = await this.userRepository.findOneBy({ email });
-    if (user) {
+    const userRecord = await this.userRepository.findOneBy({ email });
+    if (userRecord) {
       throw new BadRequestException('Email is already in use');
     }
     const createdUser = this.userRepository.create({
-      name: createUserDto.name,
-      email,
+      ...createUserDto,
+      createdBy: currentUser,
       password: await bcrypt.hash(createUserDto.password, 10),
     });
     return await this.userRepository.save(createdUser);
@@ -93,6 +94,25 @@ export class AuthService implements OnApplicationBootstrap {
     );
     return { ...userWithoutPassword, token };
   }
+  async changePassword(user: User, changePasswordDto: ChangePasswordDto) {
+    const existingUser = await this.userRepository.findOneBy({ id: user.id });
+    if (!existingUser) {
+      throw new BadRequestException('User not found');
+    }
+    const isMatch = await bcrypt.compare(
+      changePasswordDto.oldPassword,
+      existingUser.password,
+    );
+
+    if (!isMatch) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+    existingUser.password = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      10,
+    );
+    return await this.userRepository.save(existingUser);
+  }
   async findAll() {
     return await this.userRepository.find();
   }
@@ -100,7 +120,9 @@ export class AuthService implements OnApplicationBootstrap {
   async findOne(id: string) {
     return await this.userRepository.findOneBy({ id });
   }
-
+  async profile(user: User) {
+    return await this.findOne(user.id);
+  }
   async update(id: string, updateAuthDto: UpdateUserDto) {
     const user = await this.userRepository.findOneBy({ id });
     if (!user) {

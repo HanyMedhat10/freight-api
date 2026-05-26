@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ContractModule } from './contract/contract.module';
+import { ShipmentModule } from './shipment/shipment.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -42,6 +43,8 @@ import { ContractModule } from './contract/contract.module';
     AuthModule,
 
     ContractModule,
+
+    ShipmentModule,
   ],
   controllers: [AppController],
   providers: [

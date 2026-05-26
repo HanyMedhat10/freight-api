@@ -1,3 +1,5 @@
+import { Contract } from 'src/contract/entities/contract.entity';
+import { Shipment } from 'src/shipment/entities/shipment.entity';
 import {
   Column,
   CreateDateColumn,
@@ -11,7 +13,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Role } from './enum/user.enum';
-import { Contract } from 'src/contract/entities/contract.entity';
 
 @Entity()
 export class User {
@@ -41,6 +42,8 @@ export class User {
 
   @OneToMany(() => Contract, (contract) => contract.client)
   contracts!: Contract[];
+  @OneToMany(() => Shipment, (shipment) => shipment.client)
+  shipments!: Shipment[];
   @CreateDateColumn()
   createdAt!: Date;
 

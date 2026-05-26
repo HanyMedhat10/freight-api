@@ -1,4 +1,5 @@
 import { User } from 'src/auth/entities/user.entity';
+import { Shipment } from 'src/shipment/entities/shipment.entity';
 import {
   Column,
   CreateDateColumn,
@@ -6,6 +7,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -29,7 +31,8 @@ export class Contract {
   @JoinColumn({ name: 'clientId' })
   client!: User;
   //shipments
-  // @OneToMany(() => Shipment, (shipment) => shipment.contract)
+  @OneToMany(() => Shipment, (shipment) => shipment.contract)
+  shipments!: Shipment[];
   @CreateDateColumn()
   createdAt!: Date;
   @UpdateDateColumn()

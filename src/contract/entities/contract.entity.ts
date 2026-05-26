@@ -33,7 +33,7 @@ export class Contract {
   @CreateDateColumn()
   createdAt!: Date;
   @UpdateDateColumn()
-  datedAt!: Date;
+  updatedAt!: Date;
   @DeleteDateColumn()
   deletedAt!: Date;
 }

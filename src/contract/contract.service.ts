@@ -1,26 +1,63 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/auth/entities/user.entity';
+import type { Repository } from 'typeorm';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
+import { Contract } from './entities/contract.entity';
 
 @Injectable()
 export class ContractService {
-  create(createContractDto: CreateContractDto) {
-    return 'This action adds a new contract';
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Contract)
+    private readonly contractRepository: Repository<Contract>,
+  ) {}
+  async create(createContractDto: CreateContractDto) {
+    const clientId = createContractDto.clientId;
+    const client = await this.userRepository.findOne({
+      where: { id: clientId },
+    });
+    if (!client) {
+      throw new NotFoundException('Client not found');
+    }
+    const contract = this.contractRepository.create({
+      ...createContractDto,
+      client,
+    });
+    return await this.contractRepository.save(contract);
   }
 
-  findAll() {
-    return `This action returns all contract`;
+  async findAll() {
+    return await this.contractRepository.find({ relations: { client: true } });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} contract`;
+  async findOne(id: string) {
+    return await this.contractRepository.findOne({
+      where: { id },
+      relations: { client: true },
+    });
+  }
+  async update(id: string, updateContractDto: UpdateContractDto) {
+    const contract = await this.findOne(id);
+    if (!contract) {
+      throw new NotFoundException('Contract not found');
+    }
+    if (updateContractDto.clientId) {
+      const client = await this.userRepository.findOne({
+        where: { id: updateContractDto.clientId },
+      });
+      if (!client) {
+        throw new NotFoundException('Client not found');
+      }
+      contract.client = client;
+    }
+    Object.assign(contract, updateContractDto);
+    return await this.contractRepository.save(contract);
   }
 
-  update(id: number, updateContractDto: UpdateContractDto) {
-    return `This action updates a #${id} contract`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} contract`;
+  async remove(id: string) {
+    return await this.contractRepository.softDelete(id);
   }
 }

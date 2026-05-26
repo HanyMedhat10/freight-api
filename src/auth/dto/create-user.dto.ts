@@ -31,8 +31,8 @@ export class CreateUserDto {
   @MinLength(8)
   @IsStrongPassword()
   password!: string;
-  @ApiProperty({ enum: Role , default: Role.CLIENT })
+  @ApiProperty({ enum: Role, default: Role.CLIENT })
   @IsNotEmpty()
-  @IsEnum( Role )
+  @IsEnum(Role)
   role!: Role;
 }

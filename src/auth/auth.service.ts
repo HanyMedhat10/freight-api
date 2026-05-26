@@ -118,8 +118,12 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async findOne(id: string) {
-    return await this.userRepository.findOneBy({ id });
+    return await this.userRepository.findOne({
+      where: { id },
+      relations: { contracts: true },
+    });
   }
+
   async profile(user: User) {
     return await this.findOne(user.id);
   }

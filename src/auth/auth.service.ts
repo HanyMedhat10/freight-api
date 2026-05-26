@@ -16,6 +16,7 @@ import type { LoginDto } from './dto/login.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from './entities/enum/user.enum';
 import { User } from './entities/user.entity';
+import { PaginationDto } from 'src/core/utility/pagination.dto';
 @Injectable()
 export class AuthService implements OnApplicationBootstrap {
   constructor(
@@ -42,9 +43,7 @@ export class AuthService implements OnApplicationBootstrap {
         role: Role.ADMIN,
       });
       await this.userRepository.save(admin);
-      console.log(
-        `Admin user created with email: ${adminEmail} and password: ${adminPassword}`,
-      );
+      console.log(`Admin user created with email: ${adminEmail} `);
     } else {
       console.log(`Admin user already exists with email: ${adminEmail}`);
     }
@@ -113,8 +112,24 @@ export class AuthService implements OnApplicationBootstrap {
     );
     return await this.userRepository.save(existingUser);
   }
-  async findAll() {
-    return await this.userRepository.find();
+  async findAll(paginationDto: PaginationDto) {
+    const { page, limit } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.userRepository.findAndCount({
+      skip,
+      take: limit,
+    });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+        limit,
+      },
+    };
   }
 
   async findOne(id: string) {

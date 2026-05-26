@@ -5,6 +5,8 @@ import type { Repository } from 'typeorm';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
 import { Contract } from './entities/contract.entity';
+import type { PaginationDto } from 'src/core/utility/pagination.dto';
+import type { PaginatedResult } from 'src/core/utility/pagination.dto';
 
 @Injectable()
 export class ContractService {
@@ -29,8 +31,25 @@ export class ContractService {
     return await this.contractRepository.save(contract);
   }
 
-  async findAll() {
-    return await this.contractRepository.find({ relations: { client: true } });
+  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Contract>> {
+    const { page, limit } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.contractRepository.findAndCount({
+      relations: { client: true },
+      skip,
+      take: limit,
+    });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+        limit,
+      },
+    };
   }
 
   async findOne(id: string) {

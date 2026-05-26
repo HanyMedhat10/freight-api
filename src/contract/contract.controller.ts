@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -16,6 +17,7 @@ import { Roles } from 'src/auth/roles/roles.decorator';
 import { ContractService } from './contract.service';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
+import { PaginationDto } from 'src/core/utility/pagination.dto';
 
 @Controller('contract')
 export class ContractController {
@@ -31,8 +33,8 @@ export class ContractController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get()
-  findAll() {
-    return this.contractService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.contractService.findAll(paginationDto);
   }
   @ApiBearerAuth()
   @Roles(Role.ADMIN)

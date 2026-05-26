@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -20,6 +21,7 @@ import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import type { UpdateStatusWithTrackingDto } from './dto/update-status-with-tracking.dto';
 import { ShipmentService } from './shipment.service';
+import { PaginationDto } from 'src/core/utility/pagination.dto';
 
 @Controller('shipment')
 export class ShipmentController {
@@ -37,8 +39,8 @@ export class ShipmentController {
   @Roles(Role.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get()
-  findAll() {
-    return this.shipmentService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.shipmentService.findAll(paginationDto);
   }
 
   @ApiBearerAuth()
@@ -51,8 +53,11 @@ export class ShipmentController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get('my-shipments')
-  getClientShipments(@CurrentUser() user: User) {
-    return this.shipmentService.getClientShipments(user);
+  getClientShipments(
+    @CurrentUser() user: User,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.shipmentService.getClientShipments(user, paginationDto);
   }
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)

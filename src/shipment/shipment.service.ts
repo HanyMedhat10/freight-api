@@ -7,6 +7,8 @@ import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import type { UpdateStatusWithTrackingDto } from './dto/update-status-with-tracking.dto';
 import { Shipment } from './entities/shipment.entity';
 import { TrackingLog } from './entities/tracking-log.entity';
+import type { PaginatedResult } from 'src/core/utility/pagination.dto';
+import type { PaginationDto } from 'src/core/utility/pagination.dto';
 
 @Injectable()
 export class ShipmentService {
@@ -35,14 +37,29 @@ export class ShipmentService {
     return await this.shipmentRepository.save(shipment);
   }
 
-  async findAll() {
-    return await this.shipmentRepository.find({
+  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Shipment>> {
+    const { page, limit } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.shipmentRepository.findAndCount({
       relations: {
         client: true,
         contract: true,
         trackingLogs: true,
       },
+      skip,
+      take: limit,
     });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+        limit,
+      },
+    };
   }
 
   async findOne(id: string) {
@@ -80,15 +97,30 @@ export class ShipmentService {
       return await manager.save(trackingLog);
     });
   }
-  async getClientShipments(user: User) {
-    return await this.shipmentRepository.find({
+  async getClientShipments(user: User, paginationDto: PaginationDto): Promise<PaginatedResult<Shipment>> {
+    const { page, limit } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.shipmentRepository.findAndCount({
       where: { client: { id: user.id } },
       relations: {
         client: true,
         contract: true,
         trackingLogs: true,
       },
+      skip,
+      take: limit,
     });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+        limit,
+      },
+    };
   }
   async getClientShipmentById(user: User, id: string) {
     return await this.shipmentRepository.findOne({

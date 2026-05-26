@@ -40,7 +40,7 @@ async function bootstrap() {
   await app.register(helmet);
 
   // CSRF Protection
-  await app.register(fastifyCsrf);
+  // await app.register(fastifyCsrf);
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }

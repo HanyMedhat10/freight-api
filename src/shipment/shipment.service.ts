@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { User } from 'src/auth/entities/user.entity';
-import type { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import type { UpdateStatusWithTrackingDto } from './dto/update-status-with-tracking.dto';
@@ -15,9 +15,10 @@ export class ShipmentService {
     private readonly shipmentRepository: Repository<Shipment>,
     @InjectRepository(TrackingLog)
     private readonly trackingLogRepository: Repository<TrackingLog>,
+    private readonly dataSource: DataSource,
   ) {}
-  async create(createShipmentDto: CreateShipmentDto) {
-    const { origin, destination, length, width, height, weight, clientId } =
+  async create(createShipmentDto: CreateShipmentDto,user: User) {
+    const { origin, destination, length, width, height, weight } =
       createShipmentDto;
     // Here you would typically save the shipment to the database
     const calculatedCbm = (length * width * height) / 1_000_000; // Convert to cubic meters
@@ -29,7 +30,7 @@ export class ShipmentService {
       height,
       weight,
       calculatedCbm,
-      client: { id: clientId }, // Assuming you have a User entity with an id field
+      client: user, // Assuming you have a User entity with an id field
     });
     return await this.shipmentRepository.save(shipment);
   }
@@ -57,24 +58,27 @@ export class ShipmentService {
   async updateStatusWithTrackingLog(
     shipmentId: string,
     updateStatusWithTrackingDto: UpdateStatusWithTrackingDto,
-    user: User,
   ) {
     // Implementation for updating shipment status with tracking log
-    const shipment = await this.getClientShipmentById(user, shipmentId);
+    const shipment = await this.findOne(shipmentId);
     if (!shipment) {
       throw new NotFoundException('Shipment not found');
     }
-    // Update the shipment status
-    shipment.status = updateStatusWithTrackingDto.status;
-    await this.shipmentRepository.save(shipment);
 
-    // Create a new tracking log
-    const trackingLog = this.trackingLogRepository.create({
-      shipment,
-      location: updateStatusWithTrackingDto.location,
-      description: updateStatusWithTrackingDto.description,
+    // Use a single transaction to ensure both operations succeed or fail together
+    return await this.dataSource.transaction(async (manager) => {
+      // Update the shipment status
+      shipment.status = updateStatusWithTrackingDto.status;
+      await manager.save(shipment);
+
+      // Create a new tracking log
+      const trackingLog = manager.create(TrackingLog, {
+        shipment,
+        location: updateStatusWithTrackingDto.location,
+        description: updateStatusWithTrackingDto.description,
+      });
+      return await manager.save(trackingLog);
     });
-    return await this.trackingLogRepository.save(trackingLog);
   }
   async getClientShipments(user: User) {
     return await this.shipmentRepository.find({

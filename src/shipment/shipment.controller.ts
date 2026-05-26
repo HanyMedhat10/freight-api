@@ -18,8 +18,8 @@ import { Roles } from 'src/auth/roles/roles.decorator';
 import { CurrentUser } from 'src/core/utility/decorators/current-user.decorator';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
-import { ShipmentService } from './shipment.service';
 import type { UpdateStatusWithTrackingDto } from './dto/update-status-with-tracking.dto';
+import { ShipmentService } from './shipment.service';
 
 @Controller('shipment')
 export class ShipmentController {
@@ -27,8 +27,11 @@ export class ShipmentController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post()
-  create(@Body() createShipmentDto: CreateShipmentDto) {
-    return this.shipmentService.create(createShipmentDto);
+  create(
+    @Body() createShipmentDto: CreateShipmentDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.shipmentService.create(createShipmentDto, user);
   }
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
@@ -74,13 +77,15 @@ export class ShipmentController {
   @ApiBearerAuth()
   @Roles(Role.ADMIN, Role.FORWARDER)
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Patch(':id')
+  @Patch(':id/status')
   updateStatusWithTrackingLog(
     @Param('id') id: string,
     @Body() updateStatusWithTrackingDto: UpdateStatusWithTrackingDto,
-      @CurrentUser() user: User,
   ) {
-    return this.shipmentService.updateStatusWithTrackingLog(id, updateStatusWithTrackingDto, user);
+    return this.shipmentService.updateStatusWithTrackingLog(
+      id,
+      updateStatusWithTrackingDto,
+    );
   }
   @ApiBearerAuth()
   @Roles(Role.ADMIN)

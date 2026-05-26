@@ -12,5 +12,13 @@
       "database": "freight_db"
     }
   ],
-  "cSpell.words": ["KHTML", "mxfile"]
+  "cSpell.words": [
+    "KHTML",
+    "mxfile",
+    "PGDATABASE",
+    "PGHOST",
+    "PGPASSWORD",
+    "PGPORT",
+    "PGUSER"
+  ]
 }

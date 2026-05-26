@@ -34,8 +34,8 @@ export class CreateShipmentDto {
   @IsNumber()
   @IsPositive()
   weight!: number;
-  @ApiProperty()
+  /* @ApiProperty()
   @IsNotEmpty()
   @IsUUID()
-  clientId!: string;
+  clientId!: string; */
 }

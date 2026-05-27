@@ -149,12 +149,12 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async remove(id: string) {
-    const user = await this.userRepository.findOneBy({ id });
+    /* const user = await this.userRepository.findOneBy({ id });
     if (!user) {
       throw new BadRequestException('User not found');
     }
-
-    return await this.userRepository.softRemove(user);
+ */
+    return await this.userRepository.softDelete(id);
     // but i have catch filter that catch error when user not found and return 404 not found, so i can use softDelete directly without check if user exist or not because if user not exist it will throw error and catch by filter and return 404 not found
     // return await this.userRepository.softDelete(id);
   }

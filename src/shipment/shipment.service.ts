@@ -21,11 +21,12 @@ export class ShipmentService {
     private readonly trackingLogRepository: Repository<TrackingLog>,
     private readonly dataSource: DataSource,
   ) {}
+  CUBIC_CENTIMETERS_PER_CUBIC_METER = 1_000_000;
   async create(createShipmentDto: CreateShipmentDto, user: User) {
     const { origin, destination, length, width, height, weight, contractId } =
       createShipmentDto;
     // Here you would typically save the shipment to the database
-    const calculatedCbm = (length * width * height) / 1_000_000; // Convert to cubic meters
+    const calculatedCbm = (length * width * height) / this.CUBIC_CENTIMETERS_PER_CUBIC_METER; // Convert to cubic meters
     const shipment = this.shipmentRepository.create({
       origin,
       destination,
@@ -54,6 +55,7 @@ export class ShipmentService {
       },
       skip,
       take: limit,
+      order: { createdAt: 'DESC' },
     });
 
     return {
@@ -81,27 +83,34 @@ export class ShipmentService {
     shipmentId: string,
     updateStatusWithTrackingDto: UpdateStatusWithTrackingDto,
   ) {
-    // Implementation for updating shipment status with tracking log
-    const shipment = await this.findOne(shipmentId);
-    if (!shipment) {
-      throw new NotFoundException('Shipment not found');
-    }
-
-    // Use a single transaction to ensure both operations succeed or fail together
     return await this.dataSource.transaction(async (manager) => {
-      // Update the shipment status
+      // 1. Fetch the shipment and lock it (Row-Level Lock) until the transaction is completed
+      const shipment = await manager.findOne(Shipment, {
+        where: { id: shipmentId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!shipment) {
+        throw new NotFoundException('Shipment not found');
+      }
+
+      // (Here you can add any Business Logic or Validation based on the current shipment data)
+
+      // 2. Update the status
       shipment.status = updateStatusWithTrackingDto.status;
       await manager.save(shipment);
 
-      // Create a new tracking log
+      // 3. Create the Tracking log
       const trackingLog = manager.create(TrackingLog, {
         shipment,
         location: updateStatusWithTrackingDto.location,
         description: updateStatusWithTrackingDto.description,
       });
+
       return await manager.save(trackingLog);
     });
   }
+
   async getClientShipments(
     user: User,
     paginationDto: PaginationDto,
@@ -118,6 +127,7 @@ export class ShipmentService {
       },
       skip,
       take: limit,
+      order: { createdAt: 'DESC' },
     });
 
     return {
@@ -141,9 +151,10 @@ export class ShipmentService {
     });
   }
   async update(id: string, updateShipmentDto: UpdateShipmentDto) {
-    const shipment = await this.shipmentRepository.findOne({ where: { id } });
-    Object.assign(shipment!, updateShipmentDto);
-    return await this.shipmentRepository.save(shipment!);
+    await this.shipmentRepository.update(id, {
+      ...updateShipmentDto,
+    });
+    return await this.findOne(id);
   }
 
   async remove(id: string) {

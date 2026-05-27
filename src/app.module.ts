@@ -54,12 +54,10 @@ import { ShipmentModule } from './shipment/shipment.module';
   ],
   controllers: [AppController],
   providers: [
-    // 1. تسجيل الـ Throttler Guard
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    // 2. تسجيل الـ Transform Interceptor بشكل منفصل
     {
       provide: APP_INTERCEPTOR,
       useClass: TransformInterceptor,

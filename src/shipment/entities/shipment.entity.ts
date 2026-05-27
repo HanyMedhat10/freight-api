@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -32,6 +33,7 @@ export class Shipment {
   weight!: number;
   @Column({ type: 'float', nullable: true })
   calculatedCbm?: number;
+  @Index() // Speeds up filtering by status
   @Column({
     type: 'enum',
     enum: ShipmentStatus,
@@ -39,9 +41,11 @@ export class Shipment {
   })
   status!: ShipmentStatus;
 
+  @Index() // Speeds up filtering by client
   @ManyToOne(() => User, (user) => user.shipments)
   @JoinColumn({ name: 'clientId' })
   client!: User;
+  @Index() // Speeds up filtering by contract
   @ManyToOne(() => Contract, (contract) => contract.shipments, {
     nullable: false,
   })

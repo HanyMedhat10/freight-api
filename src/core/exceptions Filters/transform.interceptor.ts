@@ -9,7 +9,6 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { RESPONSE_MESSAGE_KEY } from './response-message.decorator';
 
-// 1. تعريف الـ Interface الخاص بشكل الرد الموحد
 export interface StandardResponse<T> {
   success: boolean;
   statusCode: number;

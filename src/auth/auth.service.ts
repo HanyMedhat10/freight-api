@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { sign } from 'jsonwebtoken';
 import * as process from 'process';
+import { PaginationDto } from 'src/core/utility/pagination.dto';
 import { Repository } from 'typeorm';
 import type { ChangePasswordDto } from './dto/change-password.dto';
 import type { CreateUserDto } from './dto/create-user.dto';
@@ -16,7 +17,6 @@ import type { LoginDto } from './dto/login.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from './entities/enum/user.enum';
 import { User } from './entities/user.entity';
-import { PaginationDto } from 'src/core/utility/pagination.dto';
 @Injectable()
 export class AuthService implements OnApplicationBootstrap {
   constructor(
@@ -89,6 +89,7 @@ export class AuthService implements OnApplicationBootstrap {
     const token = sign(
       { ...userWithoutPassword },
       process.env.JWT_SECRET || 'MySuperSecretKey123!',
+      { expiresIn: '7d' },
     );
     return { ...userWithoutPassword, token };
   }
@@ -118,6 +119,7 @@ export class AuthService implements OnApplicationBootstrap {
     const [data, total] = await this.userRepository.findAndCount({
       skip,
       take: limit,
+      order: { createdAt: 'DESC' },
     });
 
     return {
@@ -142,12 +144,8 @@ export class AuthService implements OnApplicationBootstrap {
     return await this.findOne(user.id);
   }
   async update(id: string, updateAuthDto: UpdateUserDto) {
-    const user = await this.userRepository.findOneBy({ id });
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
-    Object.assign(user, updateAuthDto);
-    return await this.userRepository.save(user);
+    await this.userRepository.update(id, updateAuthDto);
+    return await this.findOne(id);
   }
 
   async remove(id: string) {

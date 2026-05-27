@@ -151,7 +151,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
           process.env.NODE_ENV !== 'production' ? exception.message : undefined,
       };
     }
-
+    // Inside resolveException in all-exceptions.filter.ts
+    if (exception?.constructor?.name === 'QueryFailedError') {
+      const error = exception as any;
+      if (error.code === '23505') {
+        // Postgres Unique Violation
+        return {
+          statusCode: HttpStatus.CONFLICT,
+          message: 'A record with this value already exists.',
+          error: 'Conflict',
+        };
+      }
+    }
     // 4. Unknown / unhandled
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

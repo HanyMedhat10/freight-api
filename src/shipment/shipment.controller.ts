@@ -174,7 +174,7 @@ export class ShipmentController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateShipmentDto: UpdateShipmentDto,
-  ): Promise<Shipment> {
+  ): Promise<Shipment | null> {
     return this.shipmentService.update(id, updateShipmentDto);
   }
 

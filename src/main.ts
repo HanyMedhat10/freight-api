@@ -1,5 +1,4 @@
 import compression from '@fastify/compress';
-import fastifyCsrf from '@fastify/csrf-protection';
 import helmet from '@fastify/helmet';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -20,7 +19,13 @@ async function bootstrap() {
   app.enableVersioning({
     type: VersioningType.URI,
   });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true, // Enables auto-casting (e.g. String -> Number)
+      // transformOptions: { enableImplicitConversion: true },
+    }),
+  );
   const config = new DocumentBuilder()
     .setTitle('FREIGHT API')
     .setDescription('FREIGHT API Documentation')
@@ -35,7 +40,13 @@ async function bootstrap() {
   // main.ts
   app.useGlobalFilters(new AllExceptionsFilter());
   // Global middleware
-  app.enableCors();
+  app.enableCors({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? ['https://your-frontend-domain.com']
+        : '*',
+    credentials: true,
+  });
   await app.register(compression);
   await app.register(helmet);
 

@@ -39,6 +39,7 @@ export class ContractService {
       relations: { client: true },
       skip,
       take: limit,
+      order: { createdAt: 'DESC' },
     });
 
     return {
@@ -62,6 +63,7 @@ export class ContractService {
     return  await this.contractRepository.findAndCount({
       where: { client: { id: user.id } },
       relations: { client: true },
+      order: { createdAt: 'DESC' },
     });
   }
   async update(id: string, updateContractDto: UpdateContractDto) {
@@ -78,8 +80,9 @@ export class ContractService {
       }
       contract.client = client;
     }
-    Object.assign(contract, updateContractDto);
-    return await this.contractRepository.save(contract);
+    return await this.contractRepository.update(id, {
+      ...updateContractDto,
+    });
   }
 
   async remove(id: string) {

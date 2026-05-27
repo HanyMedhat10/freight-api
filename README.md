@@ -161,11 +161,7 @@ freight-api/
 
 ## 🗄️ Database Design
 
-The system relies on a relational database model optimized for logistics operations.
-
-> **![ER Diagram](./docs/er-diagram.png)**
-
-_(If the diagram above doesn't render, see the [Draw.io source file](./Freight%20%26%20SCM%20API.drawio) for the full architecture diagram.)_
+The system relies on a relational database model optimized for logistics operations. The full schema design and entity relationships can be viewed by opening the [Draw.io source file](./Freight%20%26%20SCM%20API.drawio) in [Draw.io / diagrams.net](https://app.diagrams.net/).
 
 ### Key Entities
 
@@ -438,9 +434,10 @@ The project uses **Jest** as the testing framework with **Supertest** for HTTP a
 
 ### Test Configuration
 
-- Unit tests: configured in `package.json` under the `jest` key
-- E2E tests: configured in `test/jest-e2e.json`
-- Coverage output: `./coverage/`
+- **Unit tests**: configured in `package.json` under the `jest` key.
+- **E2E tests**: configured in `test/jest-e2e.json`.
+- **Path Resolution**: Both configurations define `moduleNameMapper` to resolve absolute path imports starting with `src/`.
+- **Coverage output**: `./coverage/`
 
 ---
 
@@ -537,6 +534,23 @@ Ensure `autoLoadEntities: true` is set in the TypeORM configuration (it is by de
 
 </details>
 
+<details>
+<summary><strong>Cannot find module 'src/...' in Jest tests</strong></summary>
+
+Jest does not natively resolve TypeScript compiler path aliases (like `src/*`). This project resolves this by configuring the `moduleNameMapper` inside `package.json` and `test/jest-e2e.json`:
+
+```json
+"moduleNameMapper": {
+  "^src/(.*)$": "<rootDir>/$1"
+}
+```
+
+If you encounter module resolution errors during testing:
+1. Ensure your test runner executes with the workspace configuration.
+2. Verify the `moduleNameMapper` mapping matches your directories.
+3. If running E2E tests, check that `test/jest-e2e.json` maps to `"<rootDir>/../src/$1"`.
+</details>
+
 ---
 
 ## 🤝 Contributing
@@ -595,5 +609,5 @@ This project is **UNLICENSED** — All Rights Reserved.
 ---
 
 <p align="center">
-  <sub>Built with ❤️ using <a href="https://nestjs.com/">NestJS</a> • Last Updated: May 2026</sub>
+  <sub>Built with ❤️ using <a href="https://nestjs.com/">NestJS</a> • Last Updated: May 27, 2026</sub>
 </p>

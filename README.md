@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="asset/logo.png" width="120" alt="NestJS Logo" /></a>
+  <a href="http://nestjs.com/" target="blank"><img src="asset/logo.png" width="250" alt="Logo" /></a>
 </p>
 
 <h1 align="center">🚚 Freight & Logistics SCM API</h1>
@@ -238,20 +238,20 @@ CREATE DATABASE freight_db;
 
 Create a `.env` file in the project root with the following variables:
 
-| Variable         | Description                                             | Default                        | Required |
-| ---------------- | ------------------------------------------------------- | ------------------------------ | -------- |
-| `PGHOST`         | PostgreSQL database host                               | `localhost`                    | ✅       |
-| `PGPORT`         | PostgreSQL database port                               | `5432`                         | ✅       |
-| `PGUSER`         | PostgreSQL database username                           | `postgres`                     | ✅       |
-| `PGPASSWORD`     | PostgreSQL database password                           | —                              | ✅       |
-| `PGDATABASE`     | PostgreSQL database name                               | `freight_db`                   | ✅       |
-| `PORT`           | Application port                                        | `3000`                         | ❌       |
-| `JWT_SECRET`     | Secret key for secure JWT signing                       | —                              | ✅       |
-| `NODE_ENV`       | Application environment (`development` or `production`) | `development`                  | ❌       |
-| `CORS_ORIGIN`    | Comma-separated list of allowed origins                 | —                              | ✅ (Prod) |
-| `ADMIN_EMAIL`    | Default Admin account email for initial database seed   | `HanyMedhatDev@gmail.com`      | ❌       |
-| `ADMIN_PASSWORD` | Default Admin account password for database seed       | `adminPassword`                | ❌       |
-| `ADMIN_USERNAME` | Default Admin account display name for database seed   | `Hany Medhat`                  | ❌       |
+| Variable         | Description                                             | Default                   | Required  |
+| ---------------- | ------------------------------------------------------- | ------------------------- | --------- |
+| `PGHOST`         | PostgreSQL database host                                | `localhost`               | ✅        |
+| `PGPORT`         | PostgreSQL database port                                | `5432`                    | ✅        |
+| `PGUSER`         | PostgreSQL database username                            | `postgres`                | ✅        |
+| `PGPASSWORD`     | PostgreSQL database password                            | —                         | ✅        |
+| `PGDATABASE`     | PostgreSQL database name                                | `freight_db`              | ✅        |
+| `PORT`           | Application port                                        | `3000`                    | ❌        |
+| `JWT_SECRET`     | Secret key for secure JWT signing                       | —                         | ✅        |
+| `NODE_ENV`       | Application environment (`development` or `production`) | `development`             | ❌        |
+| `CORS_ORIGIN`    | Comma-separated list of allowed origins                 | —                         | ✅ (Prod) |
+| `ADMIN_EMAIL`    | Default Admin account email for initial database seed   | `HanyMedhatDev@gmail.com` | ❌        |
+| `ADMIN_PASSWORD` | Default Admin account password for database seed        | `adminPassword`           | ❌        |
+| `ADMIN_USERNAME` | Default Admin account display name for database seed    | `Hany Medhat`             | ❌        |
 
 ### Example `.env`
 
@@ -318,8 +318,8 @@ The API will be available at: **<http://localhost:3000>**
 
 Once the project is running, access the interactive API documentation:
 
-| Resource        | URL                                |
-| --------------- | ---------------------------------- |
+| Resource        | URL                                  |
+| --------------- | ------------------------------------ |
 | **Swagger UI**  | <http://localhost:3000/docs>         |
 | **JSON Schema** | <http://localhost:3000/swagger/json> |
 

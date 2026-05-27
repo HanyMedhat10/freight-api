@@ -27,19 +27,18 @@ import {
 } from '@nestjs/swagger';
 import { Role } from 'src/auth/entities/enum/user.enum';
 import { User } from 'src/auth/entities/user.entity';
+import { RoleGuard } from 'src/auth/guards/role.guard';
+import { Roles } from 'src/auth/guards/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
-import { RoleGuard } from 'src/auth/role/role.guard';
-import { Roles } from 'src/auth/roles/roles.decorator';
 import { CurrentUser } from 'src/core/utility/decorators/current-user.decorator';
 import {
   PaginationDto,
   type PaginatedResult,
 } from 'src/core/utility/pagination.dto';
-import type { UpdateResult } from 'typeorm/browser/query-builder/result/UpdateResult.js';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import { UpdateStatusWithTrackingDto } from './dto/update-status-with-tracking.dto';
-import { Shipment } from './entities/shipment.entity'; // adjust path as needed
+import { Shipment } from './entities/shipment.entity';
 import type { TrackingLog } from './entities/tracking-log.entity';
 import { ShipmentService } from './shipment.service';
 
@@ -137,7 +136,7 @@ export class ShipmentController {
   getClientShipmentById(
     @CurrentUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<Shipment | null> {
+  ): Promise<Shipment> {
     return this.shipmentService.getClientShipmentById(user, id);
   }
 
@@ -154,7 +153,7 @@ export class ShipmentController {
   })
   @ApiNotFoundResponse({ description: 'Shipment not found.' })
   @CommonErrorResponses()
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Shipment | null> {
+  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Shipment> {
     return this.shipmentService.findOne(id);
   }
 
@@ -174,7 +173,7 @@ export class ShipmentController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateShipmentDto: UpdateShipmentDto,
-  ): Promise<Shipment | null> {
+  ): Promise<Shipment> {
     return this.shipmentService.update(id, updateShipmentDto);
   }
 
@@ -215,7 +214,7 @@ export class ShipmentController {
   })
   @ApiNotFoundResponse({ description: 'Shipment not found.' })
   @CommonErrorResponses()
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<UpdateResult> {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.shipmentService.remove(id);
   }
 }

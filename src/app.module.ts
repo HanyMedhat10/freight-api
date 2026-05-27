@@ -7,12 +7,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ContractModule } from './contract/contract.module';
-import { TransformInterceptor } from './core/exceptions Filters/transform.interceptor';
+import { TransformInterceptor } from './core/exception-filters/transform.interceptor';
 import { ShipmentModule } from './shipment/shipment.module';
+
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
@@ -22,34 +24,32 @@ import { ShipmentModule } from './shipment/shipment.module';
         password: configService.get<string>('PGPASSWORD'),
         database: configService.get<string>('PGDATABASE'),
         autoLoadEntities: true,
-        synchronize: configService.get<string>('NODE_ENV') !== 'production', // Disable synchronize in production for safety
-        logging: configService.get<string>('NODE_ENV') === 'development', // Enable logging in development
+        synchronize:
+          configService.get<string>('NODE_ENV') !== 'production',
+        logging: configService.get<string>('NODE_ENV') === 'development',
       }),
     }),
-    ConfigModule.forRoot(),
 
     ThrottlerModule.forRoot([
       {
         name: 'short',
-        ttl: 60000, // 60 seconds  // 1 minute
+        ttl: 60000,
         limit: 10,
       },
       {
         name: 'medium',
-        ttl: 300000, // 5 minutes
-        limit: 50, // 50 requests per 5 minutes for general endpoints
+        ttl: 300000,
+        limit: 50,
       },
       {
         name: 'large',
-        ttl: 3600000, // 1 hour
-        limit: 500, // 500 requests per hour for sustained usage
+        ttl: 3600000,
+        limit: 500,
       },
     ]),
 
     AuthModule,
-
     ContractModule,
-
     ShipmentModule,
   ],
   controllers: [AppController],

@@ -8,34 +8,46 @@ import {
 } from 'class-validator';
 
 export class CreateShipmentDto {
-  @ApiProperty()
+  @ApiProperty({
+    example: 'Shanghai, China',
+    description: 'Origin port or city',
+  })
   @IsString()
   @IsNotEmpty()
   origin!: string;
-  @ApiProperty()
+
+  @ApiProperty({
+    example: 'Alexandria, Egypt',
+    description: 'Destination port or city',
+  })
   @IsString()
   @IsNotEmpty()
   destination!: string;
-  @ApiProperty()
+
+  @ApiProperty({ example: 120, description: 'Length in centimeters' })
   @IsNumber()
   @IsPositive()
   length!: number;
-  @ApiProperty()
+
+  @ApiProperty({ example: 80, description: 'Width in centimeters' })
   @IsNumber()
   @IsPositive()
   width!: number;
 
-  @ApiProperty()
+  @ApiProperty({ example: 100, description: 'Height in centimeters' })
   @IsNumber()
   @IsPositive()
   height!: number;
 
-  @ApiProperty()
+  @ApiProperty({ example: 250.5, description: 'Weight in kilograms' })
   @IsNumber()
   @IsPositive()
   weight!: number;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'UUID of the associated contract',
+  })
   @IsNotEmpty()
   @IsUUID()
   contractId!: string;

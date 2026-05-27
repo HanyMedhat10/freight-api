@@ -1,11 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { User } from 'src/auth/entities/user.entity';
+import { Contract } from 'src/contract/entities/contract.entity';
 import type {
   PaginatedResult,
   PaginationDto,
 } from 'src/core/utility/pagination.dto';
+import { paginate } from 'src/core/utility/paginate';
 import { DataSource, Repository } from 'typeorm';
+import { VALID_STATUS_TRANSITIONS } from './constants/status-transitions';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import type { UpdateStatusWithTrackingDto } from './dto/update-status-with-tracking.dto';
@@ -14,19 +21,34 @@ import { TrackingLog } from './entities/tracking-log.entity';
 
 @Injectable()
 export class ShipmentService {
+  private readonly CUBIC_CENTIMETERS_PER_CUBIC_METER = 1_000_000;
+
   constructor(
     @InjectRepository(Shipment)
     private readonly shipmentRepository: Repository<Shipment>,
     @InjectRepository(TrackingLog)
     private readonly trackingLogRepository: Repository<TrackingLog>,
+    @InjectRepository(Contract)
+    private readonly contractRepository: Repository<Contract>,
     private readonly dataSource: DataSource,
   ) {}
-  CUBIC_CENTIMETERS_PER_CUBIC_METER = 1_000_000;
+
   async create(createShipmentDto: CreateShipmentDto, user: User) {
     const { origin, destination, length, width, height, weight, contractId } =
       createShipmentDto;
-    // Here you would typically save the shipment to the database
-    const calculatedCbm = (length * width * height) / this.CUBIC_CENTIMETERS_PER_CUBIC_METER; // Convert to cubic meters
+
+    // Validate that the contract exists and belongs to the user (or user is admin)
+    const contract = await this.contractRepository.findOne({
+      where: { id: contractId },
+      relations: { client: true },
+    });
+    if (!contract) {
+      throw new NotFoundException(`Contract with id "${contractId}" not found`);
+    }
+
+    const calculatedCbm =
+      (length * width * height) / this.CUBIC_CENTIMETERS_PER_CUBIC_METER;
+
     const shipment = this.shipmentRepository.create({
       origin,
       destination,
@@ -35,8 +57,8 @@ export class ShipmentService {
       height,
       weight,
       calculatedCbm,
-      client: user, // Assuming you have a User entity with an id field
-      contract: { id: contractId }, // Set the contract using the contractId
+      client: user,
+      contract,
     });
     return await this.shipmentRepository.save(shipment);
   }
@@ -44,41 +66,23 @@ export class ShipmentService {
   async findAll(
     paginationDto: PaginationDto,
   ): Promise<PaginatedResult<Shipment>> {
-    const { page, limit } = paginationDto;
-    const skip = (page - 1) * limit;
-
-    const [data, total] = await this.shipmentRepository.findAndCount({
-      relations: {
-        client: true,
-        contract: true,
-        trackingLogs: true,
-      },
-      skip,
-      take: limit,
+    return paginate(this.shipmentRepository, paginationDto, {
+      relations: { client: true, contract: true, trackingLogs: true },
       order: { createdAt: 'DESC' },
     });
-
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        lastPage: Math.ceil(total / limit),
-        limit,
-      },
-    };
   }
 
   async findOne(id: string) {
-    return await this.shipmentRepository.findOne({
+    const shipment = await this.shipmentRepository.findOne({
       where: { id },
-      relations: {
-        client: true,
-        contract: true,
-        trackingLogs: true,
-      },
+      relations: { client: true, contract: true, trackingLogs: true },
     });
+    if (!shipment) {
+      throw new NotFoundException(`Shipment with id "${id}" not found`);
+    }
+    return shipment;
   }
+
   async updateStatusWithTrackingLog(
     shipmentId: string,
     updateStatusWithTrackingDto: UpdateStatusWithTrackingDto,
@@ -94,13 +98,20 @@ export class ShipmentService {
         throw new NotFoundException('Shipment not found');
       }
 
-      // (Here you can add any Business Logic or Validation based on the current shipment data)
+      // 2. Validate state transition
+      const allowedNextStatuses = VALID_STATUS_TRANSITIONS[shipment.status];
+      if (!allowedNextStatuses.includes(updateStatusWithTrackingDto.status)) {
+        throw new BadRequestException(
+          `Cannot transition from "${shipment.status}" to "${updateStatusWithTrackingDto.status}". ` +
+            `Allowed transitions: ${allowedNextStatuses.join(', ') || 'none (terminal state)'}`,
+        );
+      }
 
-      // 2. Update the status
+      // 3. Update the status
       shipment.status = updateStatusWithTrackingDto.status;
       await manager.save(shipment);
 
-      // 3. Create the Tracking log
+      // 4. Create the Tracking log
       const trackingLog = manager.create(TrackingLog, {
         shipment,
         location: updateStatusWithTrackingDto.location,
@@ -115,49 +126,37 @@ export class ShipmentService {
     user: User,
     paginationDto: PaginationDto,
   ): Promise<PaginatedResult<Shipment>> {
-    const { page, limit } = paginationDto;
-    const skip = (page - 1) * limit;
-
-    const [data, total] = await this.shipmentRepository.findAndCount({
+    return paginate(this.shipmentRepository, paginationDto, {
       where: { client: { id: user.id } },
-      relations: {
-        client: true,
-        contract: true,
-        trackingLogs: true,
-      },
-      skip,
-      take: limit,
+      relations: { client: true, contract: true, trackingLogs: true },
       order: { createdAt: 'DESC' },
     });
+  }
 
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        lastPage: Math.ceil(total / limit),
-        limit,
-      },
-    };
-  }
   async getClientShipmentById(user: User, id: string) {
-    return await this.shipmentRepository.findOne({
+    const shipment = await this.shipmentRepository.findOne({
       where: { client: { id: user.id }, id },
-      relations: {
-        client: true,
-        contract: true,
-        trackingLogs: true,
-      },
+      relations: { client: true, contract: true, trackingLogs: true },
     });
+    if (!shipment) {
+      throw new NotFoundException(
+        `Shipment with id "${id}" not found for current user`,
+      );
+    }
+    return shipment;
   }
+
   async update(id: string, updateShipmentDto: UpdateShipmentDto) {
-    await this.shipmentRepository.update(id, {
-      ...updateShipmentDto,
-    });
-    return await this.findOne(id);
+    const shipment = await this.findOne(id);
+    Object.assign(shipment, updateShipmentDto);
+    return await this.shipmentRepository.save(shipment);
   }
 
   async remove(id: string) {
-    return await this.shipmentRepository.softDelete({ id });
+    const result = await this.shipmentRepository.softDelete({ id });
+    if (result.affected === 0) {
+      throw new NotFoundException(`Shipment with id "${id}" not found`);
+    }
+    return result;
   }
 }

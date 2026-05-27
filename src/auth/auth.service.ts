@@ -88,7 +88,7 @@ export class AuthService implements OnApplicationBootstrap {
     const { password, ...userWithoutPassword } = user;
     const token = sign(
       { ...userWithoutPassword },
-      process.env.JWT_SECRET || 'secret',
+      process.env.JWT_SECRET || 'MySuperSecretKey123!',
     );
     return { ...userWithoutPassword, token };
   }

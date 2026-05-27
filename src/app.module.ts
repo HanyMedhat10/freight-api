@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ContractModule } from './contract/contract.module';
+import { TransformInterceptor } from './core/exceptions Filters/transform.interceptor';
 import { ShipmentModule } from './shipment/shipment.module';
 @Module({
   imports: [
@@ -21,8 +22,8 @@ import { ShipmentModule } from './shipment/shipment.module';
         password: configService.get<string>('PGPASSWORD'),
         database: configService.get<string>('PGDATABASE'),
         autoLoadEntities: true,
-        synchronize: configService.get<string>('NODE_ENV') !== 'production' ,// Disable synchronize in production for safety
-         logging: configService.get<string>('NODE_ENV') === 'development', // Enable logging in development
+        synchronize: configService.get<string>('NODE_ENV') !== 'production', // Disable synchronize in production for safety
+        logging: configService.get<string>('NODE_ENV') === 'development', // Enable logging in development
       }),
     }),
     ConfigModule.forRoot(),
@@ -53,11 +54,16 @@ import { ShipmentModule } from './shipment/shipment.module';
   ],
   controllers: [AppController],
   providers: [
+    // 1. تسجيل الـ Throttler Guard
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-
+    // 2. تسجيل الـ Transform Interceptor بشكل منفصل
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformInterceptor,
+    },
     AppService,
   ],
 })

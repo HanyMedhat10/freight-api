@@ -11,7 +11,6 @@ import { Shipment } from './shipment.entity';
 
 @Entity()
 export class TrackingLog {
-  // Define properties and relationships for the TrackingLog entity here
   @PrimaryGeneratedColumn('uuid')
   id!: string;
   @Column()

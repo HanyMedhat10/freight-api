@@ -29,7 +29,7 @@ export class TransformInterceptor<T> implements NestInterceptor<
     next: CallHandler,
   ): Observable<StandardResponse<T>> {
     const ctx = context.switchToHttp();
-    const response = ctx.getResponse(); 
+    const response = ctx.getResponse();
     const statusCode = response.statusCode;
 
     const message =
@@ -41,7 +41,7 @@ export class TransformInterceptor<T> implements NestInterceptor<
         success: true,
         statusCode,
         message,
-        data: data !== undefined ? data : null, 
+        data: data !== undefined ? data : null,
         timestamp: new Date().toISOString(),
       })),
     );

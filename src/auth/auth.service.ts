@@ -1,15 +1,16 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
   Injectable,
+  Logger,
+  NotFoundException,
   OnApplicationBootstrap,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { sign } from 'jsonwebtoken';
-import * as process from 'process';
-import { PaginationDto } from 'src/core/utility/pagination.dto';
+import type { PaginationDto } from 'src/core/utility/pagination.dto';
+import { paginate } from 'src/core/utility/paginate';
 import { Repository } from 'typeorm';
 import type { ChangePasswordDto } from './dto/change-password.dto';
 import type { CreateUserDto } from './dto/create-user.dto';
@@ -17,37 +18,51 @@ import type { LoginDto } from './dto/login.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from './entities/enum/user.enum';
 import { User } from './entities/user.entity';
+
 @Injectable()
 export class AuthService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    // private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async onApplicationBootstrap() {
-    // Initialization logic here
-    const adminUser = process.env.ADMIN_USERNAME || 'admin';
-    const adminEmail = (
-      process.env.ADMIN_EMAIL || 'admin@gmail.com'
-    ).toLowerCase();
-    const adminPassword = process.env.ADMIN_PASSWORD || 'adminPassword';
+    const adminEmail = this.configService.get<string>('ADMIN_EMAIL');
+    const adminPassword = this.configService.get<string>('ADMIN_PASSWORD');
+    const adminUser = this.configService.get<string>('ADMIN_USERNAME');
+
+    if (!adminEmail || !adminPassword) {
+      this.logger.warn(
+        'ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin seed',
+      );
+      return;
+    }
+
+    const normalizedEmail = adminEmail.toLowerCase();
     const existingAdmin = await this.userRepository.findOneBy({
-      email: adminEmail,
+      email: normalizedEmail,
     });
+
     if (!existingAdmin) {
       const admin = this.userRepository.create({
-        email: adminEmail.toLowerCase(),
-        name: adminUser,
+        email: normalizedEmail,
+        name: adminUser || 'admin',
         password: await bcrypt.hash(adminPassword, 10),
         role: Role.ADMIN,
       });
       await this.userRepository.save(admin);
-      console.log(`Admin user created with email: ${adminEmail} `);
+      this.logger.log(`Admin user created with email: ${normalizedEmail}`);
     } else {
-      console.log(`Admin user already exists with email: ${adminEmail}`);
+      this.logger.log(
+        `Admin user already exists with email: ${normalizedEmail}`,
+      );
     }
   }
+
   async create(createUserDto: CreateUserDto, currentUser: User) {
     const email = createUserDto.email.toLowerCase();
     const userRecord = await this.userRepository.findOneBy({ email });
@@ -56,11 +71,13 @@ export class AuthService implements OnApplicationBootstrap {
     }
     const createdUser = this.userRepository.create({
       ...createUserDto,
+      email,
       createdBy: currentUser,
       password: await bcrypt.hash(createUserDto.password, 10),
     });
     return await this.userRepository.save(createdUser);
   }
+
   async login(loginDto: LoginDto) {
     const user = await this.userRepository.findOne({
       where: {
@@ -72,9 +89,6 @@ export class AuthService implements OnApplicationBootstrap {
         email: true,
         password: true,
         role: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
       },
     });
     if (!user) {
@@ -84,25 +98,32 @@ export class AuthService implements OnApplicationBootstrap {
     if (!isMatch) {
       throw new BadRequestException('Invalid email or password');
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = user;
-    const token = sign(
-      { ...userWithoutPassword },
-      process.env.JWT_SECRET || 'MySuperSecretKey123!',
-      { expiresIn: '7d' },
-    );
-    return { ...userWithoutPassword, token };
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token,
+    };
   }
+
   async changePassword(user: User, changePasswordDto: ChangePasswordDto) {
-    const existingUser = await this.userRepository.findOneBy({ id: user.id });
+    const existingUser = await this.userRepository.findOne({
+      where: { id: user.id },
+      select: { id: true, password: true },
+    });
     if (!existingUser) {
-      throw new BadRequestException('User not found');
+      throw new NotFoundException('User not found');
     }
     const isMatch = await bcrypt.compare(
       changePasswordDto.oldPassword,
       existingUser.password,
     );
-
     if (!isMatch) {
       throw new BadRequestException('Current password is incorrect');
     }
@@ -110,52 +131,42 @@ export class AuthService implements OnApplicationBootstrap {
       changePasswordDto.newPassword,
       10,
     );
-    return await this.userRepository.save(existingUser);
+    await this.userRepository.save(existingUser);
+    return { message: 'Password changed successfully' };
   }
-  async findAll(paginationDto: PaginationDto) {
-    const { page, limit } = paginationDto;
-    const skip = (page - 1) * limit;
 
-    const [data, total] = await this.userRepository.findAndCount({
-      skip,
-      take: limit,
+  async findAll(paginationDto: PaginationDto) {
+    return paginate(this.userRepository, paginationDto, {
       order: { createdAt: 'DESC' },
     });
-
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        lastPage: Math.ceil(total / limit),
-        limit,
-      },
-    };
   }
 
   async findOne(id: string) {
-    return await this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { id },
       relations: { contracts: true },
     });
+    if (!user) {
+      throw new NotFoundException(`User with id "${id}" not found`);
+    }
+    return user;
   }
 
   async profile(user: User) {
     return await this.findOne(user.id);
   }
+
   async update(id: string, updateAuthDto: UpdateUserDto) {
-    await this.userRepository.update(id, updateAuthDto);
-    return await this.findOne(id);
+    const existingUser = await this.findOne(id);
+    Object.assign(existingUser, updateAuthDto);
+    return await this.userRepository.save(existingUser);
   }
 
   async remove(id: string) {
-    /* const user = await this.userRepository.findOneBy({ id });
-    if (!user) {
-      throw new BadRequestException('User not found');
+    const result = await this.userRepository.softDelete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`User with id "${id}" not found`);
     }
- */
-    return await this.userRepository.softDelete(id);
-    // but i have catch filter that catch error when user not found and return 404 not found, so i can use softDelete directly without check if user exist or not because if user not exist it will throw error and catch by filter and return 404 not found
-    // return await this.userRepository.softDelete(id);
+    return result;
   }
 }

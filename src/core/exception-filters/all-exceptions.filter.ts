@@ -134,7 +134,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return this.handleHttpException(exception);
     }
 
-    // 3. Native JS errors
+    // 2. Native JS errors
     if (exception instanceof SyntaxError) {
       return {
         statusCode: HttpStatus.BAD_REQUEST,
@@ -151,7 +151,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           process.env.NODE_ENV !== 'production' ? exception.message : undefined,
       };
     }
-    // Inside resolveException in all-exceptions.filter.ts
+    // 3. TypeORM QueryFailedError
     if (exception?.constructor?.name === 'QueryFailedError') {
       const error = exception as any;
       if (error.code === '23505') {

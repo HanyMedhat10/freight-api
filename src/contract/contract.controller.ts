@@ -48,7 +48,7 @@ export class ContractController {
   }
 
   @ApiBearerAuth()
-  @Roles(Role.CLIENT)
+  @Roles(Role.CLIENT, Role.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get('my-contracts')
   getClientContracts(@CurrentUser() user: User) {

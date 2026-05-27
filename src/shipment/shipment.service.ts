@@ -1,14 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { User } from 'src/auth/entities/user.entity';
+import type {
+  PaginatedResult,
+  PaginationDto,
+} from 'src/core/utility/pagination.dto';
 import { DataSource, Repository } from 'typeorm';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import type { UpdateStatusWithTrackingDto } from './dto/update-status-with-tracking.dto';
 import { Shipment } from './entities/shipment.entity';
 import { TrackingLog } from './entities/tracking-log.entity';
-import type { PaginatedResult } from 'src/core/utility/pagination.dto';
-import type { PaginationDto } from 'src/core/utility/pagination.dto';
 
 @Injectable()
 export class ShipmentService {
@@ -19,8 +21,8 @@ export class ShipmentService {
     private readonly trackingLogRepository: Repository<TrackingLog>,
     private readonly dataSource: DataSource,
   ) {}
-  async create(createShipmentDto: CreateShipmentDto,user: User) {
-    const { origin, destination, length, width, height, weight } =
+  async create(createShipmentDto: CreateShipmentDto, user: User) {
+    const { origin, destination, length, width, height, weight, contractId } =
       createShipmentDto;
     // Here you would typically save the shipment to the database
     const calculatedCbm = (length * width * height) / 1_000_000; // Convert to cubic meters
@@ -33,11 +35,14 @@ export class ShipmentService {
       weight,
       calculatedCbm,
       client: user, // Assuming you have a User entity with an id field
+      contract: { id: contractId }, // Set the contract using the contractId
     });
     return await this.shipmentRepository.save(shipment);
   }
 
-  async findAll(paginationDto: PaginationDto): Promise<PaginatedResult<Shipment>> {
+  async findAll(
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResult<Shipment>> {
     const { page, limit } = paginationDto;
     const skip = (page - 1) * limit;
 
@@ -97,7 +102,10 @@ export class ShipmentService {
       return await manager.save(trackingLog);
     });
   }
-  async getClientShipments(user: User, paginationDto: PaginationDto): Promise<PaginatedResult<Shipment>> {
+  async getClientShipments(
+    user: User,
+    paginationDto: PaginationDto,
+  ): Promise<PaginatedResult<Shipment>> {
     const { page, limit } = paginationDto;
     const skip = (page - 1) * limit;
 

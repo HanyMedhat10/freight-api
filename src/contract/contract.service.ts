@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/auth/entities/user.entity';
-import type { PaginatedResult, PaginationDto } from 'src/core/utility/pagination.dto';
+import type {
+  PaginatedResult,
+  PaginationDto,
+} from 'src/core/utility/pagination.dto';
 import { paginate } from 'src/core/utility/paginate';
 import { Repository } from 'typeorm';
 import { CreateContractDto } from './dto/create-contract.dto';

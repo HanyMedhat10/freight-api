@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="NestJS Logo" /></a>
+  <a href="http://nestjs.com/" target="blank"><img src="asset/logo.png" width="120" alt="NestJS Logo" /></a>
 </p>
 
 <h1 align="center">🚚 Freight & Logistics SCM API</h1>
@@ -78,18 +78,21 @@ The API leverages the latest NestJS ecosystem mapped to a Fastify adapter, ensur
 ### 🏢 Domain & Business Logic
 
 - **Automated CBM Calculation** — Dynamic calculation of Cubic Meters (CBM) based on shipment dimensions.
-- **Advanced Contract Management** — Handle complex agreements including Ro-Ro contracts and Charter Party terms.
+- **Advanced Contract Management** — Handle complex agreements including Ro-Ro contracts and Charter Party terms, with automatic contract existence validation on shipment creation.
 - **Supply Chain Workflows** — Support for processing Letters of Credit (LC) and tracking international import/export lifecycles.
-- **End-to-End Tracking** — Granular, immutable logs to monitor shipment statuses through their complete lifecycle:
-  `Pending` → `In Transit` → `Customs Clearance` → `Delivered`
+- **End-to-End Tracking & State Machine** — Granular, immutable logs to monitor shipment statuses through their complete lifecycle with a strict state transition validator:
+  - `PENDING` ➔ `IN_TRANSIT` ➔ `CUSTOMS_CLEARANCE` ➔ `DELIVERED`
+  - Any active state can transition to `CANCELLED`.
+  - Terminal states (`DELIVERED`, `CANCELLED`) cannot transition further.
 
 ### 💻 Technical Excellence
 
-- **Robust RBAC** — Multi-tier authorization using custom Guards and Decorators to separate Admins, Clients, and Forwarders.
-- **Fastify Performance** — Optimized payloads via `@fastify/compress` and high-speed routing.
-- **Data Integrity** — ACID-compliant transactions using TypeORM to ensure consistency across shipments and contracts.
-- **Production-Ready Security** — JWT-based authentication, URI versioning, Helmet headers, CSRF protection, and multi-tier rate limiting.
-- **Global Exception Handling** — Unified error response format with custom domain exceptions (Validation, ResourceNotFound, DuplicateResource, BusinessRule, ExternalService).
+- **Robust RBAC & Guards** — Type-safe, multi-tier authorization using custom `@Roles()` decorator and role guards built specifically to support Fastify context.
+- **Fastify Performance** — High-speed routing with optimized payload sizes using `@fastify/compress` middleware.
+- **Unified Pagination** — Reusable, validated utility supporting offset/limit pagination, with client-side query validation matching a maximum limit of `100` items per page.
+- **Data Integrity & Safety** — ACID-compliant transactions using TypeORM, cascading soft-delete checks, and safe object serialization (e.g., password fields explicitly hidden).
+- **Production-Ready Security** — JWT-based authentication using `@nestjs/jwt` and `ConfigService`, environment-driven CORS origin configuration, Helmet headers, and multi-tier rate limiting.
+- **Global Exception Handling** — Unified, descriptive JSON error response format via custom exception filters (e.g., `ValidationException`, `ResourceNotFoundException`, etc.).
 - **API Versioning** — URI-based versioning (`/v1/...`) for backward-compatible evolution.
 
 ---
@@ -102,12 +105,31 @@ The API leverages the latest NestJS ecosystem mapped to a Fastify adapter, ensur
 freight-api/
 ├── src/
 │   ├── main.ts                          # Application bootstrap & middleware setup
-│   ├── app.module.ts                    # Root module (DB, throttling, config)
+│   ├── app.module.ts                    # Root module (database, throttling, configuration modules)
 │   ├── app.controller.ts                # Root health-check controller
 │   ├── app.service.ts                   # Root service
-│   └── core/
-│       └── exceptions Filters/
-│           └── all-exceptions.filter.ts # Global catch-all exception filter
+│   ├── auth/                            # Authentication & RBAC module
+│   │   ├── dto/                         # Data Transfer Objects (Login, Register, ChangePassword, etc.)
+│   │   ├── entities/                    # User entities and Role enum definitions
+│   │   ├── guards/                      # Role authorization guards and decorators
+│   │   ├── auth.controller.ts           # Sign-in, sign-up, user profiles, credentials management
+│   │   ├── auth.module.ts               # Async JWT injection configuration and services registration
+│   │   ├── auth.service.ts              # Authentication logic, password hashing, and user seeding
+│   │   └── jwt-strategy.service.ts      # Custom passport JWT extraction and payload verification
+│   ├── contract/                        # Freight Contract management module
+│   │   ├── dto/                         # Contract creation & update validation schemas
+│   │   ├── entities/                    # Contract entities, Charter Party & Ro-Ro configurations
+│   │   ├── contract.controller.ts       # Contract endpoints (create, read, update, delete)
+│   │   └── contract.service.ts          # Contract persistence logic and pagination support
+│   ├── shipment/                        # Shipment and lifecycle tracking module
+│   │   ├── constants/                   # Valid state transitions configuration (Shipment state machine)
+│   │   ├── dto/                         # Shipment tracking and lifecycle update validation
+│   │   ├── entities/                    # Shipment model, dimensions, CBM and tracking log relation
+│   │   ├── shipment.controller.ts       # Shipment endpoints (routing, queries)
+│   │   └── shipment.service.ts          # Shipment calculations, state validation, contract audits
+│   └── core/                            # Core global system middleware
+│       ├── exception-filters/           # Catch-all exception filters, custom domain exceptions & interceptors
+│       └── utility/                     # Reusable utilities (pagination, decorators)
 ├── test/
 │   ├── app.e2e-spec.ts                  # End-to-end test suite
 │   └── jest-e2e.json                    # E2E Jest configuration
@@ -216,15 +238,20 @@ CREATE DATABASE freight_db;
 
 Create a `.env` file in the project root with the following variables:
 
-| Variable     | Description                | Default      | Required |
-| ------------ | -------------------------- | ------------ | -------- |
-| `PGHOST`     | PostgreSQL host            | `localhost`  | ✅       |
-| `PGPORT`     | PostgreSQL port            | `5432`       | ✅       |
-| `PGUSER`     | PostgreSQL username        | `postgres`   | ✅       |
-| `PGPASSWORD` | PostgreSQL password        | —            | ✅       |
-| `PGDATABASE` | Database name              | `freight_db` | ✅       |
-| `PORT`       | Application port           | `3000`       | ❌       |
-| `JWT_SECRET` | Secret key for JWT signing | —            | ✅       |
+| Variable         | Description                                             | Default                        | Required |
+| ---------------- | ------------------------------------------------------- | ------------------------------ | -------- |
+| `PGHOST`         | PostgreSQL database host                               | `localhost`                    | ✅       |
+| `PGPORT`         | PostgreSQL database port                               | `5432`                         | ✅       |
+| `PGUSER`         | PostgreSQL database username                           | `postgres`                     | ✅       |
+| `PGPASSWORD`     | PostgreSQL database password                           | —                              | ✅       |
+| `PGDATABASE`     | PostgreSQL database name                               | `freight_db`                   | ✅       |
+| `PORT`           | Application port                                        | `3000`                         | ❌       |
+| `JWT_SECRET`     | Secret key for secure JWT signing                       | —                              | ✅       |
+| `NODE_ENV`       | Application environment (`development` or `production`) | `development`                  | ❌       |
+| `CORS_ORIGIN`    | Comma-separated list of allowed origins                 | —                              | ✅ (Prod) |
+| `ADMIN_EMAIL`    | Default Admin account email for initial database seed   | `HanyMedhatDev@gmail.com`      | ❌       |
+| `ADMIN_PASSWORD` | Default Admin account password for database seed       | `adminPassword`                | ❌       |
+| `ADMIN_USERNAME` | Default Admin account display name for database seed   | `Hany Medhat`                  | ❌       |
 
 ### Example `.env`
 
@@ -239,6 +266,15 @@ PORT=3000
 
 ## JWT Configuration
 JWT_SECRET=MySuperSecretKey123!
+
+## Admin Seed Credentials (Optional)
+ADMIN_USERNAME=Hany Medhat
+ADMIN_EMAIL=HanyMedhatDev@gmail.com
+ADMIN_PASSWORD=adminPassword
+
+## Node Environment & CORS
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173,http://localhost:4173
 ```
 
 > ⚠️ **Security Warning:** Never commit `.env` files or real secrets to version control. The `.env` file is already included in `.gitignore`.
@@ -417,6 +453,7 @@ The project uses **Jest** as the testing framework with **Supertest** for HTTP a
 - [ ] Set `synchronize: false` in TypeORM configuration — use migrations instead
 - [ ] Set `NODE_ENV=production`
 - [ ] Use a strong, unique `JWT_SECRET`
+- [ ] Configure `CORS_ORIGIN` environment variable with your specific frontend domain(s)
 - [ ] Configure a reverse proxy (e.g., **Nginx**, **Traefik**, or **Caddy**)
 - [ ] Enable HTTPS / TLS termination at the proxy level
 - [ ] Run via Docker container or a process manager like **PM2**

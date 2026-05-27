@@ -26,7 +26,8 @@ export class CreateUserDto {
 
   @ApiProperty({
     example: 'StrongP@ss1',
-    description: 'User password (min 8 chars, must include upper, lower, number, symbol)',
+    description:
+      'User password (min 8 chars, must include upper, lower, number, symbol)',
   })
   @MinLength(8)
   @IsStrongPassword()

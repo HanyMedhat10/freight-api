@@ -1,8 +1,4 @@
-import {
-  CanActivate,
-  Injectable,
-  type ExecutionContext,
-} from '@nestjs/common';
+import { CanActivate, Injectable, type ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
 import type { Role } from '../entities/enum/user.enum';

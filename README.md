@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-  <a href="https://github.com/HanyMedhat10/freight-api/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/badge/license-UNLICENSED-red.svg" alt="License" /></a>
+  <a href="https://github.com/HanyMedhat10/freight-api/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License" /></a>
   <a href="https://nodejs.org/" target="_blank"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg" alt="Node Version" /></a>
   <a href="https://www.typescriptlang.org/" target="_blank"><img src="https://img.shields.io/badge/typescript-%5E5.7-blue.svg" alt="TypeScript" /></a>
   <a href="https://fastify.dev/" target="_blank"><img src="https://img.shields.io/badge/fastify-%5E5.8-brightgreen.svg" alt="Fastify" /></a>
@@ -114,7 +114,8 @@ freight-api/
 │   │   ├── guards/                      # Role authorization guards and decorators
 │   │   ├── auth.controller.ts           # Sign-in, sign-up, user profiles, credentials management
 │   │   ├── auth.module.ts               # Async JWT injection configuration and services registration
-│   │   ├── auth.service.ts              # Authentication logic, password hashing, and user seeding
+│   │   ├── auth.service.ts              # Authentication logic, password hashing, admin seed on bootstrap
+│   │   ├── jwt.guard.ts                 # JWT authentication guard (Passport 'jwt' strategy)
 │   │   └── jwt-strategy.service.ts      # Custom passport JWT extraction and payload verification
 │   ├── contract/                        # Freight Contract management module
 │   │   ├── dto/                         # Contract creation & update validation schemas
@@ -129,7 +130,10 @@ freight-api/
 │   │   └── shipment.service.ts          # Shipment calculations, state validation, contract audits
 │   └── core/                            # Core global system middleware
 │       ├── exception-filters/           # Catch-all exception filters, custom domain exceptions & interceptors
-│       └── utility/                     # Reusable utilities (pagination, decorators)
+│       └── utility/                     # Reusable utilities
+│           ├── paginate.ts              # Generic offset/limit pagination helper
+│           ├── pagination.dto.ts        # Pagination query validation DTO
+│           └── decorators/              # Custom decorators (e.g., @CurrentUser())
 ├── test/
 │   ├── app.e2e-spec.ts                  # End-to-end test suite
 │   └── jest-e2e.json                    # E2E Jest configuration
@@ -332,9 +336,36 @@ Authorization: Bearer <your-jwt-token>
 All endpoints use URI-based versioning:
 
 ```
-GET /v1/shipments
-POST /v1/contracts
+POST /v1/auth/login
+GET  /v1/shipments
+POST /v1/contract
 ```
+
+### Key Endpoints
+
+| Module       | Method      | Route                         | Description                                      | Access           |
+| ------------ | ----------- | ----------------------------- | ------------------------------------------------ | ---------------- |
+| **Auth**     | `POST`      | `/v1/auth/login`              | Sign in and receive a JWT                        | Public           |
+|              | `GET`       | `/v1/auth/profile`            | Current user profile                             | Authenticated    |
+|              | `POST`      | `/v1/auth/change-password`    | Change own password                              | Authenticated    |
+|              | `POST`      | `/v1/auth`                    | Create a user (admin-managed registration)       | Admin            |
+|              | `GET`       | `/v1/auth` / `/v1/auth/:id`   | List / retrieve users                            | Admin            |
+|              | `PATCH`     | `/v1/auth/:id`                | Update a user                                    | Admin            |
+|              | `DELETE`    | `/v1/auth/:id`                | Delete a user                                    | Admin            |
+| **Contract** | `POST`      | `/v1/contract`                | Create a freight contract                        | Admin            |
+|              | `GET`       | `/v1/contract`                | List contracts (paginated)                       | Admin            |
+|              | `GET`       | `/v1/contract/my-contracts`   | Contracts created by the current client          | Client, Admin    |
+|              | `GET/PATCH` | `/v1/contract/:id`            | Retrieve / update a contract                     | Admin            |
+|              | `DELETE`    | `/v1/contract/:id`            | Delete a contract                                | Admin            |
+| **Shipment** | `POST`      | `/v1/shipments`               | Create a shipment (validates contract, calc CBM) | Admin            |
+|              | `GET`       | `/v1/shipments`               | List shipments (paginated)                       | Admin            |
+|              | `GET`       | `/v1/shipments/my` / `my/:id` | Client's own shipments                           | Admin, Forwarder |
+|              | `GET`       | `/v1/shipments/:id`           | Retrieve a shipment with tracking log            | Admin            |
+|              | `PATCH`     | `/v1/shipments/:id`           | Update a shipment                                | Admin            |
+|              | `PATCH`     | `/v1/shipments/:id/status`    | Advance status with tracking log entry           | Admin            |
+|              | `DELETE`    | `/v1/shipments/:id`           | Delete a shipment                                | Admin            |
+
+> Shipment status transitions are validated by a strict state machine: `PENDING → IN_TRANSIT → CUSTOMS_CLEARANCE → DELIVERED`, with `CANCELLED` available from any active state.
 
 ---
 
@@ -546,6 +577,7 @@ Jest does not natively resolve TypeScript compiler path aliases (like `src/*`). 
 ```
 
 If you encounter module resolution errors during testing:
+
 1. Ensure your test runner executes with the workspace configuration.
 2. Verify the `moduleNameMapper` mapping matches your directories.
 3. If running E2E tests, check that `test/jest-e2e.json` maps to `"<rootDir>/../src/$1"`.
@@ -604,10 +636,10 @@ For issues, technical discussions, or feature requests, please [open an issue](h
 
 ## 📄 License
 
-This project is **UNLICENSED** — All Rights Reserved.
+This project is [MIT](https://github.com/HanyMedhat10/freight-api/blob/main/LICENSE) — All Rights Reserved.
 
 ---
 
 <p align="center">
-  <sub>Built with ❤️ using <a href="https://nestjs.com/">NestJS</a> • Last Updated: May 27, 2026</sub>
+  <sub>Built with ❤️ using <a href="https://nestjs.com/">NestJS</a> • Last Updated: September 14, 2026</sub>
 </p>
